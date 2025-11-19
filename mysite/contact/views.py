@@ -3,6 +3,8 @@ from django.http import HttpResponse, request
 from .forms import ContactForm
 from django.core.mail import send_mail
 from django.conf import settings
+from django.contrib import messages
+
 
 # Create your views here.
 
@@ -28,19 +30,15 @@ def home(request):
 
 
 def contact_view(request):
-    form = ContactForm(request.POST or None)
-    success = False
-    if form.is_valid():
-        name = form.cleaned_data['name']
-        email = form.cleaned_data['email']
-        message = form.cleaned_data['message']
-        send_mail(subject=f"New message from {name}",
-                  message=message,
-                  from_email=settings.EMAIL_HOST_USER,
-                  recipient_list=['sarboland.afsaneh@gmail.com'],
-                  fail_silently=False
-                  )
-        success = True
-        form = ContactForm() #reset the form
-        return render(request, 'contact/contact.html', {'form': form,'success':success})
-    return render(request, 'contact/contact.html', {'form':form})
+    if request.method == 'POST':
+        form = ContactForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Your message has been sent successfully.")
+            return redirect('contact')  # redirect برای جلوگیری از resubmission
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = ContactForm()
+
+    return render(request, 'contact/contact.html', {'form': form})
